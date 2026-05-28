@@ -246,7 +246,7 @@ export default function Page() {
       return bv.localeCompare(av);
     });
     return out;
-  }, [data, departedOnly]);
+  }, [data, departedOnly, containerOnly]);
 
   return (
     <main>
