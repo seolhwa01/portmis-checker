@@ -248,7 +248,12 @@ export default function Page() {
 
   return (
     <main>
-      <h1>Port-MIS 출항 확인</h1>
+      <h1>
+        Port-MIS 출항 확인{" "}
+        <a href="/lookup" style={{ fontSize: 14, color: "#0070f3", fontWeight: "normal" }}>
+          → 선박 단건 조회
+        </a>
+      </h1>
 
       <div className="presets">
         <span className="presets-label">기간:</span>
