@@ -155,6 +155,8 @@ export const PORT_AG_CODES: { code: string; name: string }[] = [
   { code: "021", name: "감천" },
   { code: "030", name: "인천" },
   { code: "031", name: "평택" },
+  { code: "300", name: "대산" },
+  { code: "622", name: "광양" },
   { code: "050", name: "경인" },
   { code: "820", name: "울산" },
   { code: "610", name: "목포" },

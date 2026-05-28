@@ -17,18 +17,19 @@ export const TERMINAL_TO_PORT: Record<string, { code: string; name: string }> = 
   ICT: { code: "030", name: "인천" },
   SNCT: { code: "030", name: "인천" },
   PNCT: { code: "031", name: "평택" },
-  KITL: { code: "031", name: "평택" },
+  PCTC: { code: "031", name: "평택(PCTC)" },
   // 광양
-  GWCT: { code: "622", name: "광양" },
+  GWCT: { code: "622", name: "광양(서부)" },
+  KITL: { code: "622", name: "광양(한국국제터미널 KIT)" },
   KIT: { code: "622", name: "광양(국제)" },
   // 울산
   UNCT: { code: "820", name: "울산" },
   JUCT: { code: "820", name: "울산(정일)" },
-  // tradlinx rich 응답에서 추가 발견된 신규 코드
+  // 부산 신규
   BNMT: { code: "020", name: "부산(BNMT)" },
   DGT: { code: "020", name: "부산(동원)" },
-  PCTC: { code: "020", name: "부산(PCTC)" },
-  DDCT: { code: "303", name: "대산(동방)" }, // 청코드는 추후 검증
+  // 대산
+  DDCT: { code: "300", name: "대산(동방)" },
 };
 
 export interface TerminalScheduleItem {
