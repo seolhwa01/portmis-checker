@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Info5Response } from "./lib/portmis";
 import { PORT_AG_CODES } from "./lib/portmis";
 import type { TerminalScheduleItem } from "./lib/terminals/types";
@@ -92,6 +92,7 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [departedOnly, setDepartedOnly] = useState(false);
   const [containerOnly, setContainerOnly] = useState(false);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [prtAgUsage, setPrtAgUsage] = useState<PrtAgUsage>({});
   const [terminalData, setTerminalData] = useState<TerminalApiResp | null>(null);
@@ -493,6 +494,7 @@ export default function Page() {
                   <th>항차</th>
                   <th>신고구분</th>
                   <th>(PORT-MIS) 입항</th>
+                  <th>(PORT-MIS) 출항예정</th>
                   <th>(PORT-MIS) 출항</th>
                   <th>계선장소</th>
                   {terminalData && (
@@ -502,7 +504,6 @@ export default function Page() {
                       <th>선석</th>
                       <th>터미널 ETB/ATB</th>
                       <th>터미널 ETD/ATD</th>
-                      <th>다음 일정</th>
                     </>
                   )}
                 </tr>
@@ -512,8 +513,11 @@ export default function Page() {
                   const departed = !!d.tkoffDt;
                   const tMatches = findTerminalMatches(it.clsgn, it.vsslNm, d.etryptDt ?? d.tkoffDt);
                   const tMatch = tMatches[0];
+                  const rowKey = `${it.clsgn}-${it.etryptYear}-${it.etryptCo}-${idx}`;
+                  const expanded = expandedKey === rowKey;
                   return (
-                    <tr key={`${it.clsgn}-${it.etryptYear}-${it.etryptCo}-${idx}`}>
+                    <Fragment key={rowKey}>
+                    <tr>
                       <td>
                         <strong>{it.vsslNm ?? "-"}</strong>
                         <div style={{ color: "#777", fontSize: 12 }}>{it.clsgn}</div>
@@ -527,6 +531,7 @@ export default function Page() {
                         </span>
                       </td>
                       <td>{fmtDt(d.etryptDt)}</td>
+                      <td>{fmtDt(d.tkoffPrrrnDt)}</td>
                       <td>
                         <strong style={{ color: departed ? "#1a7f4a" : "#999" }}>
                           {fmtDt(d.tkoffDt)}
@@ -537,7 +542,25 @@ export default function Page() {
                         <>
                           <td style={{ fontSize: 12 }}>
                             {tMatch ? (
-                              <strong>{tMatch.terminalLabel}</strong>
+                              <>
+                                <strong>{tMatch.terminalLabel}</strong>
+                                {tMatches.length > 1 && (
+                                  <span
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedKey(expandedKey === rowKey ? null : rowKey);
+                                    }}
+                                    style={{
+                                      color: "#0070f3",
+                                      cursor: "pointer",
+                                      marginLeft: 4,
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    +{tMatches.length - 1}
+                                  </span>
+                                )}
+                              </>
                             ) : (
                               <span style={{ color: "#bbb" }}>매칭 없음</span>
                             )}
@@ -556,26 +579,49 @@ export default function Page() {
                               {tMatch?.atd ?? tMatch?.etd ?? "-"}
                             </strong>
                           </td>
-                          <td style={{ fontSize: 11, color: "#444" }}>
-                            {tMatches.slice(1).length === 0 ? (
-                              <span style={{ color: "#bbb" }}>-</span>
-                            ) : (
-                              tMatches.slice(1).map((m, mi) => (
-                                <div key={mi} style={{ marginBottom: 2 }}>
-                                  <strong>{m.terminalLabel}</strong>
-                                  {m.berth ? <span style={{ color: "#888" }}> · {m.berth}</span> : null}
-                                  <div style={{ color: "#666" }}>
-                                    {m.atb ?? m.etb ?? "-"}
-                                    {" → "}
-                                    {m.atd ?? m.etd ?? "-"}
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </td>
                         </>
                       )}
                     </tr>
+                    {expanded && tMatches.length > 1 && (
+                      <tr>
+                        <td colSpan={12} style={{ background: "#f7faff", padding: "10px 14px" }}>
+                          <div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>
+                            같은 선박 다른 터미널 일정 {tMatches.length - 1}건
+                          </div>
+                          <table style={{ background: "#fff" }}>
+                            <thead>
+                              <tr>
+                                <th>터미널</th>
+                                <th>선석</th>
+                                <th>ETB/ATB</th>
+                                <th>ETD/ATD</th>
+                                <th>상태</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {tMatches.slice(1).map((m, mi) => (
+                                <tr key={mi}>
+                                  <td><strong>{m.terminalLabel}</strong></td>
+                                  <td>{m.berth || "-"}</td>
+                                  <td style={{ fontSize: 12 }}>{m.atb ? <strong style={{ color: "#1a7f4a" }}>{m.atb}</strong> : m.etb ?? "-"}</td>
+                                  <td style={{ fontSize: 12 }}>
+                                    <strong style={{ color: m.atd ? "#1a7f4a" : "#222" }}>
+                                      {m.atd ?? m.etd ?? "-"}
+                                    </strong>
+                                  </td>
+                                  <td>
+                                    <span className={`tag ${m.status === "Departed" ? "depart" : ""}`}>
+                                      {m.status ?? "-"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>
