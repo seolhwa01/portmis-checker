@@ -502,6 +502,7 @@ export default function Page() {
                       <th>선석</th>
                       <th>터미널 ETB/ATB</th>
                       <th>터미널 ETD/ATD</th>
+                      <th>다음 일정</th>
                     </>
                   )}
                 </tr>
@@ -536,12 +537,7 @@ export default function Page() {
                         <>
                           <td style={{ fontSize: 12 }}>
                             {tMatch ? (
-                              <>
-                                <strong>{tMatch.terminalLabel}</strong>
-                                {tMatches.length > 1 && (
-                                  <span style={{ color: "#888" }}> +{tMatches.length - 1}</span>
-                                )}
-                              </>
+                              <strong>{tMatch.terminalLabel}</strong>
                             ) : (
                               <span style={{ color: "#bbb" }}>매칭 없음</span>
                             )}
@@ -559,6 +555,23 @@ export default function Page() {
                             <strong style={{ color: tMatch?.atd ? "#1a7f4a" : "#222" }}>
                               {tMatch?.atd ?? tMatch?.etd ?? "-"}
                             </strong>
+                          </td>
+                          <td style={{ fontSize: 11, color: "#444" }}>
+                            {tMatches.slice(1).length === 0 ? (
+                              <span style={{ color: "#bbb" }}>-</span>
+                            ) : (
+                              tMatches.slice(1).map((m, mi) => (
+                                <div key={mi} style={{ marginBottom: 2 }}>
+                                  <strong>{m.terminalLabel}</strong>
+                                  {m.berth ? <span style={{ color: "#888" }}> · {m.berth}</span> : null}
+                                  <div style={{ color: "#666" }}>
+                                    {m.atb ?? m.etb ?? "-"}
+                                    {" → "}
+                                    {m.atd ?? m.etd ?? "-"}
+                                  </div>
+                                </div>
+                              ))
+                            )}
                           </td>
                         </>
                       )}
