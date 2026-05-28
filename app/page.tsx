@@ -163,18 +163,22 @@ export default function Page() {
     const byVsslNm = new Map<string, TerminalScheduleItem[]>();
     const byToken = new Map<string, TerminalScheduleItem[]>();
     const allByNm: { nm: string; it: TerminalScheduleItem }[] = [];
-    // 현재 청코드에 해당하는 tradlinx 터미널만 매칭 대상으로 사용.
-    // (예: 청코드 622 광양 조회 시 GWCT 만, 031 평택 조회 시 PNCT/KITL 만)
-    const portScoped = (terminalData?.items ?? []).filter(
-      (it) => TERMINAL_TO_PORT[it.terminal]?.code === prtAgCd,
-    );
-    for (const it of portScoped) {
+    const allItems = terminalData?.items ?? [];
+    // ITU 호출부호(byCallsign)는 전 터미널에서 인덱싱 — 직매칭은 100% 신뢰라
+    // 다른 청코드 터미널에서 잡혀도 그 선박의 다음 일정으로 의미 있음.
+    for (const it of allItems) {
       const cs = (it.vesselCd ?? "").trim().toUpperCase();
       if (cs) {
         const arr = byCallsign.get(cs) ?? [];
         arr.push(it);
         byCallsign.set(cs, arr);
       }
+    }
+    // 선명 fuzzy 매칭(byVsslNm/byToken/allByNm)은 현재 청코드 터미널만 — false positive 차단.
+    const portScoped = allItems.filter(
+      (it) => TERMINAL_TO_PORT[it.terminal]?.code === prtAgCd,
+    );
+    for (const it of portScoped) {
       const nm = normalizeVesselName(it.vsslNm);
       if (nm) {
         const arr = byVsslNm.get(nm) ?? [];
