@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Info5Response } from "./lib/portmis";
 import { PORT_AG_CODES } from "./lib/portmis";
 import type { TerminalScheduleItem } from "./lib/terminals/types";
-import { normalizeVesselName, tokenizeVesselName } from "./lib/terminals/types";
+import { normalizeVesselName, tokenizeVesselName, TERMINAL_TO_PORT } from "./lib/terminals/types";
 
 // tradlinx terminal-work API — 부산/인천/광양/평택 16개 컨테이너 터미널 현재작업 집계
 type TerminalApiResp = { items?: TerminalScheduleItem[]; error?: string; fetchedAt?: number; cached?: boolean };
@@ -163,10 +163,12 @@ export default function Page() {
     const byVsslNm = new Map<string, TerminalScheduleItem[]>();
     const byToken = new Map<string, TerminalScheduleItem[]>();
     const allByNm: { nm: string; it: TerminalScheduleItem }[] = [];
-    const bptOnly = (terminalData?.items ?? []).filter((it) =>
-      (it.terminalLabel ?? "").toUpperCase().startsWith("BPT"),
+    // 현재 청코드에 해당하는 tradlinx 터미널만 매칭 대상으로 사용.
+    // (예: 청코드 622 광양 조회 시 GWCT 만, 031 평택 조회 시 PNCT/KITL 만)
+    const portScoped = (terminalData?.items ?? []).filter(
+      (it) => TERMINAL_TO_PORT[it.terminal]?.code === prtAgCd,
     );
-    for (const it of bptOnly) {
+    for (const it of portScoped) {
       const cs = (it.vesselCd ?? "").trim().toUpperCase();
       if (cs) {
         const arr = byCallsign.get(cs) ?? [];
@@ -187,9 +189,18 @@ export default function Page() {
       }
     }
     return { byCallsign, byVsslNm, byToken, allByNm };
-  }, [terminalData]);
+  }, [terminalData, prtAgCd]);
 
-  function findTerminalMatches(clsgn?: string, vsslNm?: string): TerminalScheduleItem[] {
+  function parseTime(s?: string): number {
+    if (!s) return NaN;
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (iso) return Date.UTC(+iso[1], +iso[2] - 1, +iso[3], +iso[4], +iso[5]);
+    const d12 = s.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);
+    if (d12) return Date.UTC(+d12[1], +d12[2] - 1, +d12[3], +d12[4], +d12[5]);
+    return NaN;
+  }
+
+  function findTerminalMatches(clsgn?: string, vsslNm?: string, targetDt?: string): TerminalScheduleItem[] {
     const out: TerminalScheduleItem[] = [];
     const seen = new Set<TerminalScheduleItem>();
     const push = (arr: TerminalScheduleItem[]) => {
@@ -216,6 +227,19 @@ export default function Page() {
     }
     for (const tok of tokenizeVesselName(vsslNm)) {
       if (terminalIndex.byToken.has(tok)) push(terminalIndex.byToken.get(tok)!);
+    }
+    // 시간 근접도 정렬: Port-MIS 입항(또는 출항) 시각과 tradlinx ATB/ETB 차이가 작은 순.
+    if (targetDt && out.length > 1) {
+      const target = parseTime(targetDt);
+      if (!isNaN(target)) {
+        out.sort((a, b) => {
+          const aT = parseTime(a.atb) || parseTime(a.etb);
+          const bT = parseTime(b.atb) || parseTime(b.etb);
+          const aDiff = isNaN(aT) ? Infinity : Math.abs(aT - target);
+          const bDiff = isNaN(bT) ? Infinity : Math.abs(bT - target);
+          return aDiff - bDiff;
+        });
+      }
     }
     return out;
   }
@@ -449,7 +473,7 @@ export default function Page() {
               <tbody>
                 {rows.map(({ it, d, idx }) => {
                   const departed = !!d.tkoffDt;
-                  const tMatches = findTerminalMatches(it.clsgn, it.vsslNm);
+                  const tMatches = findTerminalMatches(it.clsgn, it.vsslNm, d.etryptDt ?? d.tkoffDt);
                   const tMatch = tMatches[0];
                   return (
                     <tr key={`${it.clsgn}-${it.etryptYear}-${it.etryptCo}-${idx}`}>

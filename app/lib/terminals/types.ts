@@ -1,5 +1,26 @@
 export type TerminalCode = string; // tradlinx 코드: BPTC/BIT/PNC/HPNT/PNIT/HJNC/BNCT/...
 
+// tradlinx 터미널코드 → Port-MIS 청코드 매핑 (검증된 값).
+// 부산신항은 Port-MIS 022 응답이 비어 020 부산에 통합.
+export const TERMINAL_TO_PORT: Record<string, { code: string; name: string }> = {
+  BCT: { code: "020", name: "부산" },
+  BIT: { code: "020", name: "부산(감만)" },
+  BPTC: { code: "020", name: "부산(신선대)" },
+  HBCT: { code: "020", name: "부산(감만)" },
+  IFPC: { code: "020", name: "부산(여객)" },
+  BNCT: { code: "020", name: "부산(신항)" },
+  HJNC: { code: "020", name: "부산(신항)" },
+  HPNT: { code: "020", name: "부산(신항)" },
+  PNC: { code: "020", name: "부산(신항)" },
+  PNIT: { code: "020", name: "부산(신항)" },
+  HJIT: { code: "030", name: "인천" },
+  ICT: { code: "030", name: "인천" },
+  SNCT: { code: "030", name: "인천" },
+  PNCT: { code: "031", name: "평택" },
+  KITL: { code: "031", name: "평택" },
+  GWCT: { code: "622", name: "광양" },
+};
+
 export interface TerminalScheduleItem {
   terminal: TerminalCode;
   terminalLabel: string;
