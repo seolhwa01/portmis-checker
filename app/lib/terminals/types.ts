@@ -21,9 +21,14 @@ export const TERMINAL_TO_PORT: Record<string, { code: string; name: string }> = 
   // 광양
   GWCT: { code: "622", name: "광양" },
   KIT: { code: "622", name: "광양(국제)" },
-  // 울산 — tradlinx 아직 미수집 가능성 있음
+  // 울산
   UNCT: { code: "820", name: "울산" },
   JUCT: { code: "820", name: "울산(정일)" },
+  // tradlinx rich 응답에서 추가 발견된 신규 코드
+  BNMT: { code: "020", name: "부산(BNMT)" },
+  DGT: { code: "020", name: "부산(동원)" },
+  PCTC: { code: "020", name: "부산(PCTC)" },
+  DDCT: { code: "303", name: "대산(동방)" }, // 청코드는 추후 검증
 };
 
 export interface TerminalScheduleItem {
