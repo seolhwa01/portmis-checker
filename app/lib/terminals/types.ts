@@ -18,7 +18,12 @@ export const TERMINAL_TO_PORT: Record<string, { code: string; name: string }> = 
   SNCT: { code: "030", name: "인천" },
   PNCT: { code: "031", name: "평택" },
   KITL: { code: "031", name: "평택" },
+  // 광양
   GWCT: { code: "622", name: "광양" },
+  KIT: { code: "622", name: "광양(국제)" },
+  // 울산 — tradlinx 아직 미수집 가능성 있음
+  UNCT: { code: "820", name: "울산" },
+  JUCT: { code: "820", name: "울산(정일)" },
 };
 
 export interface TerminalScheduleItem {

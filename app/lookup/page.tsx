@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import type { TerminalScheduleItem } from "../lib/terminals/types";
-import { normalizeVesselName, tokenizeVesselName } from "../lib/terminals/types";
+import { normalizeVesselName, tokenizeVesselName, TERMINAL_TO_PORT } from "../lib/terminals/types";
 import type { Info5Response, DepartureItem } from "../lib/portmis";
 import { parseMrNum, carrierFromScac } from "../lib/scac";
 
@@ -26,33 +26,6 @@ function todayOffset(days: number) {
   return d.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
-// tradlinx 터미널코드 → Port-MIS 청코드 매핑.
-// 검증된 청코드: 020 부산 / 030 인천 / 031 평택 / 622 광양.
-// 부산신항은 Port-MIS 022 응답이 비어있어 모두 020(부산)으로 통합 조회.
-const TERMINAL_TO_PORT: Record<string, { code: string; name: string }> = {
-  // 부산
-  BCT: { code: "020", name: "부산" },
-  BIT: { code: "020", name: "부산(감만)" },
-  BPTC: { code: "020", name: "부산(신선대)" },
-  HBCT: { code: "020", name: "부산(감만)" },
-  IFPC: { code: "020", name: "부산(여객)" },
-  // 부산신항 (Port-MIS상 020 통합)
-  BNCT: { code: "020", name: "부산(신항)" },
-  HJNC: { code: "020", name: "부산(신항)" },
-  HPNT: { code: "020", name: "부산(신항)" },
-  PNC: { code: "020", name: "부산(신항)" },
-  PNIT: { code: "020", name: "부산(신항)" },
-  // 인천
-  HJIT: { code: "030", name: "인천" },
-  ICT: { code: "030", name: "인천" },
-  SNCT: { code: "030", name: "인천" },
-  // 평택
-  PNCT: { code: "031", name: "평택" },
-  KITL: { code: "031", name: "평택" },
-  // 광양
-  GWCT: { code: "622", name: "광양" },
-};
-
 function portCodeFor(it: TerminalScheduleItem): { code: string; name: string } {
   const byCode = TERMINAL_TO_PORT[it.terminal];
   if (byCode) return byCode;
@@ -61,6 +34,7 @@ function portCodeFor(it: TerminalScheduleItem): { code: string; name: string } {
   if (/평택/.test(label)) return { code: "031", name: "평택" };
   if (/인천/.test(label)) return { code: "030", name: "인천" };
   if (/광양/.test(label)) return { code: "622", name: "광양" };
+  if (/울산/.test(label)) return { code: "820", name: "울산" };
   return { code: "020", name: "부산" };
 }
 
