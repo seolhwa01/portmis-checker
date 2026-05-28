@@ -504,6 +504,7 @@ export default function Page() {
                       <th>선석</th>
                       <th>(터미널) ETB/ATB</th>
                       <th>(터미널) ETD/ATD</th>
+                      <th>일치 여부</th>
                     </>
                   )}
                 </tr>
@@ -587,31 +588,34 @@ export default function Page() {
                           <td>{tMatch?.berth ?? "-"}</td>
                           <td style={{ fontSize: 12 }}>
                             {tMatch?.atb ? <strong style={{ color: "#1a7f4a" }}>{tMatch.atb}</strong> : tMatch?.etb ?? "-"}
-                            {(() => {
-                              // Port-MIS 입항(d.etryptDt) vs 터미널 ATB/ETB 매치(±30분)
-                              const portT = parseTime(d.etryptDt);
-                              const termT = parseTime(tMatch?.atb) || parseTime(tMatch?.etb);
-                              if (isNaN(portT) || isNaN(termT)) return null;
-                              if (Math.abs(portT - termT) > 30 * 60 * 1000) return null;
-                              return (
-                                <span style={{ marginLeft: 6, fontSize: 11, color: "#1a7f4a", fontWeight: 600 }}>
-                                  일치
-                                </span>
-                              );
-                            })()}
                           </td>
                           <td style={{ fontSize: 13 }}>
                             <strong style={{ color: tMatch?.atd ? "#1a7f4a" : "#222" }}>
                               {tMatch?.atd ?? tMatch?.etd ?? "-"}
                             </strong>
+                          </td>
+                          <td style={{ fontSize: 12, textAlign: "center" }}>
                             {(() => {
+                              // ETD/ATD vs (PORT-MIS) 실제출항 비교 (±30분 이내 = 일치)
                               const portT = parseTime(d.tkoffDt);
                               const termT = parseTime(tMatch?.atd) || parseTime(tMatch?.etd);
-                              if (isNaN(portT) || isNaN(termT)) return null;
-                              if (Math.abs(portT - termT) > 30 * 60 * 1000) return null;
+                              if (isNaN(portT) || isNaN(termT)) return <span style={{ color: "#bbb" }}>-</span>;
+                              const diffMin = Math.round(Math.abs(portT - termT) / 60000);
+                              if (diffMin <= 30) {
+                                return (
+                                  <span style={{ color: "#1a7f4a", fontWeight: 600 }}>
+                                    ✓ 일치
+                                  </span>
+                                );
+                              }
                               return (
-                                <span style={{ marginLeft: 6, fontSize: 11, color: "#1a7f4a", fontWeight: 600 }}>
-                                  일치
+                                <span style={{ color: "#c0392b", fontWeight: 600 }}>
+                                  ✗ 불일치
+                                  <div style={{ color: "#888", fontSize: 11, fontWeight: 400 }}>
+                                    {diffMin >= 60
+                                      ? `${Math.round(diffMin / 60)}h 차이`
+                                      : `${diffMin}m 차이`}
+                                  </div>
                                 </span>
                               );
                             })()}
@@ -621,7 +625,7 @@ export default function Page() {
                     </tr>
                     {expanded && tMatches.length > 1 && (
                       <tr>
-                        <td colSpan={12} style={{ background: "#f7faff", padding: "10px 14px" }}>
+                        <td colSpan={13} style={{ background: "#f7faff", padding: "10px 14px" }}>
                           <div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>
                             같은 선박 다른 터미널 일정 {tMatches.length - 1}건
                           </div>
