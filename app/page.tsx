@@ -213,7 +213,23 @@ export default function Page() {
     };
 
     const cs = (clsgn ?? "").trim().toUpperCase();
-    if (cs && terminalIndex.byCallsign.has(cs)) push(terminalIndex.byCallsign.get(cs)!);
+    if (cs && terminalIndex.byCallsign.has(cs)) {
+      // ITU 호출부호 정확 매치는 100% 동일선박 → 단독 결과로 반환, fuzzy fallback 비활성화.
+      push(terminalIndex.byCallsign.get(cs)!);
+      if (targetDt && out.length > 1) {
+        const target = parseTime(targetDt);
+        if (!isNaN(target)) {
+          out.sort((a, b) => {
+            const aT = parseTime(a.atb) || parseTime(a.etb);
+            const bT = parseTime(b.atb) || parseTime(b.etb);
+            const aDiff = isNaN(aT) ? Infinity : Math.abs(aT - target);
+            const bDiff = isNaN(bT) ? Infinity : Math.abs(bT - target);
+            return aDiff - bDiff;
+          });
+        }
+      }
+      return out;
+    }
 
     const nm = normalizeVesselName(vsslNm);
     if (nm) {

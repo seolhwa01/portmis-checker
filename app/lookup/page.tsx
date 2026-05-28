@@ -76,6 +76,13 @@ export default function LookupPage() {
       const qNorm = normalizeVesselName(term);
       const qTokens = tokenizeVesselName(term);
 
+      // 입력이 ITU 호출부호와 정확 일치하는 행이 있으면 fuzzy fallback 없이 그것만 반환.
+      const csExact = items.filter((it) => (it.vesselCd ?? "").toUpperCase() === qUpper);
+      if (csExact.length > 0) {
+        setHits(csExact);
+        return;
+      }
+
       const matched = items.filter((it) => {
         const cs = (it.vesselCd ?? "").toUpperCase();
         if (cs && cs === qUpper) return true;
