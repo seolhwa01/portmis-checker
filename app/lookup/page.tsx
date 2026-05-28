@@ -9,8 +9,10 @@ type TerminalApiResp = { items?: TerminalScheduleItem[]; error?: string };
 
 function fmt(s?: string) {
   if (!s) return "-";
-  const m = s.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})/);
-  if (m) return `${m[1]} ${m[2]}`;
+  // ISO with timezone: 2026-05-15T19:05:00+09:00
+  const iso = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+  if (iso) return `${iso[1]} ${iso[2]}`;
+  // YYYYMMDDHHMM[SS]
   if (/^\d{12,14}$/.test(s)) {
     return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)} ${s.slice(8, 10)}:${s.slice(10, 12)}`;
   }
