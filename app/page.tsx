@@ -587,11 +587,34 @@ export default function Page() {
                           <td>{tMatch?.berth ?? "-"}</td>
                           <td style={{ fontSize: 12 }}>
                             {tMatch?.atb ? <strong style={{ color: "#1a7f4a" }}>{tMatch.atb}</strong> : tMatch?.etb ?? "-"}
+                            {(() => {
+                              // Port-MIS 입항(d.etryptDt) vs 터미널 ATB/ETB 매치(±30분)
+                              const portT = parseTime(d.etryptDt);
+                              const termT = parseTime(tMatch?.atb) || parseTime(tMatch?.etb);
+                              if (isNaN(portT) || isNaN(termT)) return null;
+                              if (Math.abs(portT - termT) > 30 * 60 * 1000) return null;
+                              return (
+                                <span style={{ marginLeft: 6, fontSize: 11, color: "#1a7f4a", fontWeight: 600 }}>
+                                  일치
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td style={{ fontSize: 13 }}>
                             <strong style={{ color: tMatch?.atd ? "#1a7f4a" : "#222" }}>
                               {tMatch?.atd ?? tMatch?.etd ?? "-"}
                             </strong>
+                            {(() => {
+                              const portT = parseTime(d.tkoffDt);
+                              const termT = parseTime(tMatch?.atd) || parseTime(tMatch?.etd);
+                              if (isNaN(portT) || isNaN(termT)) return null;
+                              if (Math.abs(portT - termT) > 30 * 60 * 1000) return null;
+                              return (
+                                <span style={{ marginLeft: 6, fontSize: 11, color: "#1a7f4a", fontWeight: 600 }}>
+                                  일치
+                                </span>
+                              );
+                            })()}
                           </td>
                         </>
                       )}
