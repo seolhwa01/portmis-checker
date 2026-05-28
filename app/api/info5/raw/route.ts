@@ -33,10 +33,27 @@ export async function GET(req: NextRequest) {
   const items = root?.body?.items?.item;
   const arr = Array.isArray(items) ? items : items ? [items] : [];
 
+  // 전체 item에서 식별자 후보 필드만 추출
+  const summary = arr.map((it: any) => {
+    const detailsArr = Array.isArray(it.details?.detail)
+      ? it.details.detail
+      : it.details?.detail
+      ? [it.details.detail]
+      : [];
+    return {
+      clsgn: it.clsgn,
+      vsslNm: it.vsslNm,
+      vsslKndNm: it.vsslKndNm,
+      etryptYear: it.etryptYear,
+      etryptCo: it.etryptCo,
+      mrNums: detailsArr.map((d: any) => d.mrNum).filter(Boolean),
+      satmntEntrpsNms: [...new Set(detailsArr.map((d: any) => d.satmntEntrpsNm).filter(Boolean))],
+      laidupFcltyCds: [...new Set(detailsArr.map((d: any) => d.laidupFcltyCd).filter(Boolean))],
+    };
+  });
   return NextResponse.json({
     itemCount: arr.length,
-    firstItemKeys: arr[0] ? Object.keys(arr[0]) : [],
+    summary,
     firstItem: arr[0] ?? null,
-    rawXmlSnippet: xml.slice(0, 4000),
   });
 }
