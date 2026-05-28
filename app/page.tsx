@@ -220,17 +220,21 @@ export default function Page() {
     if (cs && terminalIndex.byCallsign.has(cs)) {
       // ITU 호출부호 정확 매치는 100% 동일선박 → 단독 결과로 반환, fuzzy fallback 비활성화.
       push(terminalIndex.byCallsign.get(cs)!);
-      if (targetDt && out.length > 1) {
-        const target = parseTime(targetDt);
-        if (!isNaN(target)) {
-          out.sort((a, b) => {
-            const aT = parseTime(a.atb) || parseTime(a.etb);
-            const bT = parseTime(b.atb) || parseTime(b.etb);
-            const aDiff = isNaN(aT) ? Infinity : Math.abs(aT - target);
-            const bDiff = isNaN(bT) ? Infinity : Math.abs(bT - target);
-            return aDiff - bDiff;
-          });
-        }
+      if (out.length > 1) {
+        const target = targetDt ? parseTime(targetDt) : NaN;
+        out.sort((a, b) => {
+          // 1순위: 현재 청코드와 일치하는 터미널을 먼저
+          const aSame = TERMINAL_TO_PORT[a.terminal]?.code === prtAgCd ? 0 : 1;
+          const bSame = TERMINAL_TO_PORT[b.terminal]?.code === prtAgCd ? 0 : 1;
+          if (aSame !== bSame) return aSame - bSame;
+          // 2순위: Port-MIS 시각과 가장 가까운 ATB/ETB
+          if (isNaN(target)) return 0;
+          const aT = parseTime(a.atb) || parseTime(a.etb);
+          const bT = parseTime(b.atb) || parseTime(b.etb);
+          const aDiff = isNaN(aT) ? Infinity : Math.abs(aT - target);
+          const bDiff = isNaN(bT) ? Infinity : Math.abs(bT - target);
+          return aDiff - bDiff;
+        });
       }
       return out;
     }
