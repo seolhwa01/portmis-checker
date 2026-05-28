@@ -560,6 +560,20 @@ export default function Page() {
                                     +{tMatches.length - 1}
                                   </span>
                                 )}
+                                {(() => {
+                                  // Port-MIS 시각과 tradlinx 매치 시각의 차이가 3일 이상이면
+                                  // "같은 선박의 다른 항차"임을 명시 (tradlinx는 과거 일정 미보관).
+                                  const portT = parseTime(d.etryptDt) || parseTime(d.tkoffDt);
+                                  const matchT = parseTime(tMatch.atb) || parseTime(tMatch.etb);
+                                  if (isNaN(portT) || isNaN(matchT)) return null;
+                                  const diffDays = Math.round((matchT - portT) / 86400000);
+                                  if (Math.abs(diffDays) < 3) return null;
+                                  return (
+                                    <div style={{ color: "#8a5a00", fontSize: 11, marginTop: 2 }}>
+                                      다음 항차 ({diffDays > 0 ? `+${diffDays}` : diffDays}일)
+                                    </div>
+                                  );
+                                })()}
                               </>
                             ) : (
                               <span style={{ color: "#bbb" }}>매칭 없음</span>
