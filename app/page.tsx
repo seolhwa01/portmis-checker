@@ -278,16 +278,30 @@ export default function Page() {
     const out: { it: any; d: any; idx: number }[] = [];
     for (const it of data.items) {
       if (containerOnly && !/컨테이너/.test(it.vsslKndNm ?? "")) continue;
+      // 같은 선박의 입항/출항 detail을 한 행으로 합침.
+      // 우선순위: 입항 detail의 etryptDt/tkoffPrrrnDt/laidupFcltyNm,
+      //          출항 detail의 tkoffDt/dstnEtryptDt
       const details = it.details && it.details.length ? it.details : [{}];
-      details.forEach((d, idx) => {
-        if (departedOnly && !d.tkoffDt) return;
-        out.push({ it, d, idx });
-      });
+      const entryD = details.find((x: any) => x.etryptDt) ?? details[0];
+      const exitD = details.find((x: any) => x.tkoffDt) ?? entryD;
+      const merged = {
+        reqstSeNm: entryD?.reqstSeNm ?? exitD?.reqstSeNm,
+        etryndNm: entryD?.etryndNm ?? exitD?.etryndNm,
+        etryptDt: entryD?.etryptDt,
+        tkoffPrrrnDt: entryD?.tkoffPrrrnDt,
+        tkoffDt: exitD?.tkoffDt,
+        ibobprtNm: entryD?.ibobprtNm ?? exitD?.ibobprtNm,
+        laidupFcltyNm: exitD?.laidupFcltyNm ?? entryD?.laidupFcltyNm,
+        grtg: entryD?.grtg ?? exitD?.grtg,
+        mrNum: entryD?.mrNum ?? exitD?.mrNum,
+        dstnEtryptDt: exitD?.dstnEtryptDt,
+      };
+      if (departedOnly && !merged.tkoffDt) continue;
+      out.push({ it, d: merged, idx: 0 });
     }
-    // 출항일(tkoffDt) 내림차순 — 미출항은 맨 뒤
     out.sort((a, b) => {
-      const av = a.d.tkoffDt ?? "";
-      const bv = b.d.tkoffDt ?? "";
+      const av = a.d.tkoffDt ?? a.d.tkoffPrrrnDt ?? "";
+      const bv = b.d.tkoffDt ?? b.d.tkoffPrrrnDt ?? "";
       if (!av && !bv) return 0;
       if (!av) return 1;
       if (!bv) return -1;
