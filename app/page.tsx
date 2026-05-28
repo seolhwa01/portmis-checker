@@ -502,8 +502,8 @@ export default function Page() {
                       <th>터미널</th>
                       <th>IMO / MMSI</th>
                       <th>선석</th>
-                      <th>터미널 ETB/ATB</th>
-                      <th>터미널 ETD/ATD</th>
+                      <th>(터미널) ETB/ATB</th>
+                      <th>(터미널) ETD/ATD</th>
                     </>
                   )}
                 </tr>
