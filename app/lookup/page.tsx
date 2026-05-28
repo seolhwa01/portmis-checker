@@ -42,7 +42,14 @@ export default function LookupPage() {
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detail, setDetail] = useState<{ port: string; portName: string; items: DepartureItem[]; totalCount: number } | null>(null);
+  const [detail, setDetail] = useState<{
+    port: string;
+    portName: string;
+    exact: DepartureItem[];
+    partial: DepartureItem[];
+    fleet: DepartureItem[];
+    totalCount: number;
+  } | null>(null);
   const [detailErr, setDetailErr] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
@@ -100,17 +107,29 @@ export default function LookupPage() {
     try {
       const port = portCodeFor(it.terminalLabel);
       const targetNorm = normalizeVesselName(it.vsslNm);
+      const targetCs = (it.vesselCd ?? "").trim().toUpperCase();
       const targetTokens = tokenizeVesselName(it.vsslNm);
-      const matches = (x: DepartureItem) => {
+      // 매칭 단계 분류:
+      //  exact  : 호출부호 일치 OR 정규화 선명 완전일치 → 동일 선박 확정
+      //  partial: 정규화 선명이 한쪽이 다른쪽을 포함 (긴 변형/축약형) → 같은 선박 가능성 높음
+      //  fleet  : 토큰 일부만 공유 → 같은 선사 다른 선박일 수 있음
+      const classify = (x: DepartureItem): "exact" | "partial" | "fleet" | null => {
+        const xCs = (x.clsgn ?? "").trim().toUpperCase();
+        if (targetCs && xCs && xCs === targetCs) return "exact";
         const xNorm = normalizeVesselName(x.vsslNm);
-        if (xNorm && targetNorm && xNorm === targetNorm) return true;
-        if (targetNorm.length >= 4 && xNorm && (xNorm.includes(targetNorm) || targetNorm.includes(xNorm))) return true;
+        if (xNorm && targetNorm && xNorm === targetNorm) return "exact";
+        if (
+          targetNorm.length >= 4 &&
+          xNorm &&
+          xNorm !== targetNorm &&
+          (xNorm.includes(targetNorm) || targetNorm.includes(xNorm))
+        )
+          return "partial";
         const xTokens = tokenizeVesselName(x.vsslNm);
-        return targetTokens.length > 0 && targetTokens.some((t) => xTokens.includes(t));
+        if (targetTokens.length > 0 && targetTokens.some((t) => xTokens.includes(t))) return "fleet";
+        return null;
       };
 
-      // Port-MIS는 페이지당 50건 한도. 최대 8페이지(400건)까지 병렬 조회해
-      // 해당 선박 매칭을 찾는다.
       const sde = todayOffset(-14);
       const ede = todayOffset(7);
       const PAGES = 8;
@@ -135,9 +154,24 @@ export default function LookupPage() {
         ),
       );
       const allItems = [first, ...rest].flatMap((r) => r.items ?? []);
-      const matched = allItems.filter(matches);
+      const exact: DepartureItem[] = [];
+      const partial: DepartureItem[] = [];
+      const fleet: DepartureItem[] = [];
+      for (const x of allItems) {
+        const c = classify(x);
+        if (c === "exact") exact.push(x);
+        else if (c === "partial") partial.push(x);
+        else if (c === "fleet") fleet.push(x);
+      }
 
-      setDetail({ port: port.code, portName: port.name, items: matched, totalCount: first.totalCount });
+      setDetail({
+        port: port.code,
+        portName: port.name,
+        exact,
+        partial,
+        fleet,
+        totalCount: first.totalCount,
+      });
     } catch (e: any) {
       setDetailErr(e?.message ?? String(e));
     } finally {
@@ -264,20 +298,70 @@ function PortMisDetail({
   detail,
 }: {
   it: TerminalScheduleItem;
-  detail: { port: string; portName: string; items: DepartureItem[]; totalCount: number };
+  detail: {
+    port: string;
+    portName: string;
+    exact: DepartureItem[];
+    partial: DepartureItem[];
+    fleet: DepartureItem[];
+    totalCount: number;
+  };
 }) {
-  if (detail.items.length === 0) {
+  const total = detail.exact.length + detail.partial.length + detail.fleet.length;
+  if (total === 0) {
     return (
       <div style={{ fontSize: 13, color: "#666" }}>
         Port-MIS({detail.portName} · {detail.port}) 최근 21일 입항 신고({detail.totalCount}건) 중
-        선박 <strong>{it.vsslNm}</strong> 매칭 없음. 해당 터미널 선박이 다른 청코드로 신고됐을 수 있습니다.
+        선박 <strong>{it.vsslNm}</strong> 매칭 없음. 해당 선박이 다른 청코드로 신고됐을 수 있습니다.
       </div>
     );
   }
+
   return (
     <div>
       <div style={{ fontSize: 13, marginBottom: 8, color: "#444" }}>
-        Port-MIS <strong>{detail.portName}({detail.port})</strong> · {detail.items.length}건 매칭
+        Port-MIS <strong>{detail.portName}({detail.port})</strong> · 동일선박 {detail.exact.length}
+        건 / 부분일치 {detail.partial.length}건 / 같은선사 {detail.fleet.length}건
+      </div>
+
+      <MatchGroup title="동일 선박" tone="exact" items={detail.exact} />
+      <MatchGroup title="부분 일치 (변형 선명 추정)" tone="partial" items={detail.partial} />
+      <MatchGroup title="같은 선사 다른 선박" tone="fleet" items={detail.fleet} />
+    </div>
+  );
+}
+
+function MatchGroup({
+  title,
+  tone,
+  items,
+}: {
+  title: string;
+  tone: "exact" | "partial" | "fleet";
+  items: DepartureItem[];
+}) {
+  if (items.length === 0) return null;
+  const colors: Record<typeof tone, { bg: string; fg: string }> = {
+    exact: { bg: "#e9f7ef", fg: "#1a7f4a" },
+    partial: { bg: "#fff7e6", fg: "#8a5a00" },
+    fleet: { bg: "#eef0f3", fg: "#555" },
+  };
+  const c = colors[tone];
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div
+        style={{
+          display: "inline-block",
+          background: c.bg,
+          color: c.fg,
+          fontSize: 12,
+          fontWeight: 600,
+          padding: "3px 8px",
+          borderRadius: 4,
+          marginBottom: 6,
+        }}
+      >
+        {title} · {items.length}건
       </div>
       <table style={{ background: "#fff" }}>
         <thead>
@@ -294,7 +378,7 @@ function PortMisDetail({
           </tr>
         </thead>
         <tbody>
-          {detail.items.flatMap((x, ix) =>
+          {items.flatMap((x, ix) =>
             (x.details && x.details.length ? x.details : [{}]).map((d: any, di: number) => (
               <tr key={`${ix}-${di}`}>
                 <td>
