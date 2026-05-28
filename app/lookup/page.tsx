@@ -223,6 +223,7 @@ export default function LookupPage() {
                 <th>터미널</th>
                 <th>선박</th>
                 <th>호출부호</th>
+                <th>IMO / MMSI</th>
                 <th>항차</th>
                 <th>선석</th>
                 <th>ETB / ATB</th>
@@ -247,6 +248,11 @@ export default function LookupPage() {
                       </td>
                       <td>{it.vsslNm}</td>
                       <td style={{ color: "#777", fontSize: 12 }}>{it.vesselCd ?? "-"}</td>
+                      <td style={{ fontSize: 11, color: "#777" }}>
+                        {it.raw?.imoNo ? <div>IMO {it.raw.imoNo}</div> : null}
+                        {it.raw?.mmsi ? <div>MMSI {it.raw.mmsi}</div> : null}
+                        {!it.raw?.imoNo && !it.raw?.mmsi ? "-" : null}
+                      </td>
                       <td>{it.voyage || "-"}</td>
                       <td>{it.berth || "-"}</td>
                       <td style={{ fontSize: 12 }}>
@@ -271,7 +277,7 @@ export default function LookupPage() {
                     </tr>
                     {active && (
                       <tr>
-                        <td colSpan={8} style={{ background: "#f7faff", padding: 12 }}>
+                        <td colSpan={9} style={{ background: "#f7faff", padding: 12 }}>
                           {detailLoading && <span>Port-MIS 상세 조회 중...</span>}
                           {detailErr && <span style={{ color: "#c00" }}>⚠ {detailErr}</span>}
                           {detail && !detailLoading && (

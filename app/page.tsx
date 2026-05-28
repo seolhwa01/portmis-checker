@@ -463,6 +463,7 @@ export default function Page() {
                   {terminalData && (
                     <>
                       <th>터미널</th>
+                      <th>IMO / MMSI</th>
                       <th>선석</th>
                       <th>터미널 ETB/ATB</th>
                       <th>터미널 ETD/ATD</th>
@@ -514,6 +515,11 @@ export default function Page() {
                             ) : (
                               <span style={{ color: "#bbb" }}>매칭 없음</span>
                             )}
+                          </td>
+                          <td style={{ fontSize: 11, color: "#777" }}>
+                            {tMatch?.raw?.imoNo ? <div>IMO {tMatch.raw.imoNo}</div> : null}
+                            {tMatch?.raw?.mmsi ? <div>MMSI {tMatch.raw.mmsi}</div> : null}
+                            {tMatch && !tMatch.raw?.imoNo && !tMatch.raw?.mmsi ? "-" : null}
                           </td>
                           <td>{tMatch?.berth ?? "-"}</td>
                           <td style={{ fontSize: 12 }}>
