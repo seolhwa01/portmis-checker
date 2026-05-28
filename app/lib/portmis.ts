@@ -28,6 +28,9 @@ export interface DepartureDetail {
   intrlGrtg?: string;
   crewCo?: string;
   dstnEtryptDt?: string;
+  // M/R No (관리참조번호) — 형식: YY+SCAC(4글자)+항차+I/E
+  // 컨테이너선의 경우 거의 100% 채워지며 선사 SCAC를 추출할 수 있음.
+  mrNum?: string;
 }
 
 export interface DepartureItem {
@@ -131,6 +134,7 @@ export async function fetchInfo5(
       intrlGrtg: d.intrlGrtg,
       crewCo: d.crewCo,
       dstnEtryptDt: d.dstnEtryptDt,
+      mrNum: d.mrNum,
     })),
   }));
 

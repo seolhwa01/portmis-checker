@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import type { TerminalScheduleItem } from "../lib/terminals/types";
 import { normalizeVesselName, tokenizeVesselName } from "../lib/terminals/types";
 import type { Info5Response, DepartureItem } from "../lib/portmis";
+import { parseMrNum, carrierFromScac } from "../lib/scac";
 
 type TerminalApiResp = { items?: TerminalScheduleItem[]; error?: string };
 
@@ -396,7 +397,8 @@ function MatchGroup({
         <thead>
           <tr>
             <th>선박명 / 호출부호</th>
-            <th>항차</th>
+            <th>선사 (SCAC)</th>
+            <th>항차 · M/R No</th>
             <th>입항</th>
             <th>출항예정</th>
             <th>실제출항</th>
@@ -408,28 +410,45 @@ function MatchGroup({
         </thead>
         <tbody>
           {items.flatMap((x, ix) =>
-            (x.details && x.details.length ? x.details : [{}]).map((d: any, di: number) => (
-              <tr key={`${ix}-${di}`}>
-                <td>
-                  <strong>{x.vsslNm ?? "-"}</strong>
-                  <div style={{ color: "#777", fontSize: 12 }}>{x.clsgn}</div>
-                </td>
-                <td>
-                  {x.etryptYear}/{x.etryptCo}
-                </td>
-                <td>{fmt(d.etryptDt)}</td>
-                <td>{fmt(d.tkoffPrrrnDt)}</td>
-                <td>
-                  <strong style={{ color: d.tkoffDt ? "#1a7f4a" : "#999" }}>{fmt(d.tkoffDt)}</strong>
-                </td>
-                <td>{d.laidupFcltyNm ?? "-"}</td>
-                <td style={{ fontSize: 12 }}>
-                  {x.prvsDpmprtPrtNm ?? "-"} → {x.nxlnptPrtNm ?? "-"}
-                </td>
-                <td>{d.grtg ?? "-"}</td>
-                <td style={{ fontSize: 12 }}>{x.vsslKndNm ?? "-"}</td>
-              </tr>
-            )),
+            (x.details && x.details.length ? x.details : [{}]).map((d: any, di: number) => {
+              const parsed = parseMrNum(d.mrNum);
+              const carrier = carrierFromScac(parsed?.scac);
+              return (
+                <tr key={`${ix}-${di}`}>
+                  <td>
+                    <strong>{x.vsslNm ?? "-"}</strong>
+                    <div style={{ color: "#777", fontSize: 12 }}>{x.clsgn}</div>
+                  </td>
+                  <td style={{ fontSize: 12 }}>
+                    {carrier ? (
+                      <>
+                        <strong>{carrier}</strong>
+                        <div style={{ color: "#888" }}>{parsed?.scac}</div>
+                      </>
+                    ) : parsed?.scac ? (
+                      <span style={{ color: "#888" }}>{parsed.scac}</span>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td style={{ fontSize: 12 }}>
+                    {x.etryptYear}/{x.etryptCo}
+                    {d.mrNum && <div style={{ color: "#888" }}>{d.mrNum}</div>}
+                  </td>
+                  <td>{fmt(d.etryptDt)}</td>
+                  <td>{fmt(d.tkoffPrrrnDt)}</td>
+                  <td>
+                    <strong style={{ color: d.tkoffDt ? "#1a7f4a" : "#999" }}>{fmt(d.tkoffDt)}</strong>
+                  </td>
+                  <td>{d.laidupFcltyNm ?? "-"}</td>
+                  <td style={{ fontSize: 12 }}>
+                    {x.prvsDpmprtPrtNm ?? "-"} → {x.nxlnptPrtNm ?? "-"}
+                  </td>
+                  <td>{d.grtg ?? "-"}</td>
+                  <td style={{ fontSize: 12 }}>{x.vsslKndNm ?? "-"}</td>
+                </tr>
+              );
+            }),
           )}
         </tbody>
       </table>
