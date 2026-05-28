@@ -91,6 +91,7 @@ export default function Page() {
   const [data, setData] = useState<Info5Response | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [departedOnly, setDepartedOnly] = useState(false);
+  const [containerOnly, setContainerOnly] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [prtAgUsage, setPrtAgUsage] = useState<PrtAgUsage>({});
   const [terminalData, setTerminalData] = useState<TerminalApiResp | null>(null);
@@ -228,6 +229,7 @@ export default function Page() {
     if (!data) return [];
     const out: { it: any; d: any; idx: number }[] = [];
     for (const it of data.items) {
+      if (containerOnly && !/컨테이너/.test(it.vsslKndNm ?? "")) continue;
       const details = it.details && it.details.length ? it.details : [{}];
       details.forEach((d, idx) => {
         if (departedOnly && !d.tkoffDt) return;
@@ -396,16 +398,26 @@ export default function Page() {
           <div className="meta" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>
               총 {data.totalCount}건 · 페이지 {data.pageNo} · {data.items.length}건 표시
-              {departedOnly && ` · 출항 완료 ${rows.length}건만 표시`}
+              {(containerOnly || departedOnly) && ` · 필터링 후 ${rows.length}건`}
             </span>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={departedOnly}
-                onChange={(e) => setDepartedOnly(e.target.checked)}
-              />
-              출항 완료만 보기
-            </label>
+            <div style={{ display: "flex", gap: 16 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={containerOnly}
+                  onChange={(e) => setContainerOnly(e.target.checked)}
+                />
+                컨테이너선만 보기
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={departedOnly}
+                  onChange={(e) => setDepartedOnly(e.target.checked)}
+                />
+                출항 완료만 보기
+              </label>
+            </div>
           </div>
           {rows.length === 0 ? (
             <div className="empty">
