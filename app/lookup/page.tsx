@@ -25,12 +25,41 @@ function todayOffset(days: number) {
   return d.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
-// 터미널 라벨 → Port-MIS 청코드 추정.
-// 부산권 컨테이너 터미널은 모두 020(부산)으로 묶어 조회 (부산신항 022는 Info5 응답이 비어있음).
-function portCodeFor(label: string): { code: string; name: string } {
+// tradlinx 터미널코드 → Port-MIS 청코드 매핑.
+// 검증된 청코드: 020 부산 / 030 인천 / 031 평택 / 622 광양.
+// 부산신항은 Port-MIS 022 응답이 비어있어 모두 020(부산)으로 통합 조회.
+const TERMINAL_TO_PORT: Record<string, { code: string; name: string }> = {
+  // 부산
+  BCT: { code: "020", name: "부산" },
+  BIT: { code: "020", name: "부산(감만)" },
+  BPTC: { code: "020", name: "부산(신선대)" },
+  HBCT: { code: "020", name: "부산(감만)" },
+  IFPC: { code: "020", name: "부산(여객)" },
+  // 부산신항 (Port-MIS상 020 통합)
+  BNCT: { code: "020", name: "부산(신항)" },
+  HJNC: { code: "020", name: "부산(신항)" },
+  HPNT: { code: "020", name: "부산(신항)" },
+  PNC: { code: "020", name: "부산(신항)" },
+  PNIT: { code: "020", name: "부산(신항)" },
+  // 인천
+  HJIT: { code: "030", name: "인천" },
+  ICT: { code: "030", name: "인천" },
+  SNCT: { code: "030", name: "인천" },
+  // 평택
+  PNCT: { code: "031", name: "평택" },
+  KITL: { code: "031", name: "평택" },
+  // 광양
+  GWCT: { code: "622", name: "광양" },
+};
+
+function portCodeFor(it: TerminalScheduleItem): { code: string; name: string } {
+  const byCode = TERMINAL_TO_PORT[it.terminal];
+  if (byCode) return byCode;
+  // fallback: 라벨 패턴
+  const label = it.terminalLabel ?? "";
   if (/평택/.test(label)) return { code: "031", name: "평택" };
-  if (/인천|ICT|SNCT|E1CT|HJIT/i.test(label)) return { code: "030", name: "인천" };
-  if (/광양|GICT/i.test(label)) return { code: "610", name: "광양" };
+  if (/인천/.test(label)) return { code: "030", name: "인천" };
+  if (/광양/.test(label)) return { code: "622", name: "광양" };
   return { code: "020", name: "부산" };
 }
 
@@ -105,7 +134,7 @@ export default function LookupPage() {
     setDetailErr(null);
     setDetailLoading(true);
     try {
-      const port = portCodeFor(it.terminalLabel);
+      const port = portCodeFor(it);
       const targetNorm = normalizeVesselName(it.vsslNm);
       const targetCs = (it.vesselCd ?? "").trim().toUpperCase();
       const targetTokens = tokenizeVesselName(it.vsslNm);
