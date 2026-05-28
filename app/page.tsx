@@ -492,12 +492,9 @@ export default function Page() {
                   <th>선박명 / 호출부호</th>
                   <th>항차</th>
                   <th>신고구분</th>
-                  <th>입항일시</th>
-                  <th>출항예정</th>
-                  <th>실제출항</th>
+                  <th>(PORT-MIS) 입항</th>
+                  <th>(PORT-MIS) 출항</th>
                   <th>계선장소</th>
-                  <th>직전출항지 → 차항지</th>
-                  <th>총톤수</th>
                   {terminalData && (
                     <>
                       <th>터미널</th>
@@ -529,17 +526,12 @@ export default function Page() {
                         </span>
                       </td>
                       <td>{fmtDt(d.etryptDt)}</td>
-                      <td>{fmtDt(d.tkoffPrrrnDt)}</td>
                       <td>
                         <strong style={{ color: departed ? "#1a7f4a" : "#999" }}>
                           {fmtDt(d.tkoffDt)}
                         </strong>
                       </td>
                       <td>{d.laidupFcltyNm ?? "-"}</td>
-                      <td style={{ fontSize: 12 }}>
-                        {it.prvsDpmprtPrtNm ?? "-"} → {it.nxlnptPrtNm ?? "-"}
-                      </td>
-                      <td>{d.grtg ?? "-"}</td>
                       {terminalData && (
                         <>
                           <td style={{ fontSize: 12 }}>
@@ -563,8 +555,10 @@ export default function Page() {
                           <td style={{ fontSize: 12 }}>
                             {tMatch?.atb ? <strong style={{ color: "#1a7f4a" }}>{tMatch.atb}</strong> : tMatch?.etb ?? "-"}
                           </td>
-                          <td style={{ fontSize: 12 }}>
-                            {tMatch?.atd ? <strong style={{ color: "#1a7f4a" }}>{tMatch.atd}</strong> : tMatch?.etd ?? "-"}
+                          <td style={{ fontSize: 13 }}>
+                            <strong style={{ color: tMatch?.atd ? "#1a7f4a" : "#222" }}>
+                              {tMatch?.atd ?? tMatch?.etd ?? "-"}
+                            </strong>
                           </td>
                         </>
                       )}
