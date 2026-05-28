@@ -45,21 +45,24 @@ export interface ParsedMrNum {
 
 export function parseMrNum(mr?: string): ParsedMrNum | null {
   if (!mr) return null;
-  const m = mr.match(/^(\d{2})([A-Z]{2,5})(.+?)([IE])$/);
+  // 표준 형식: YY + SCAC(4글자) + 항차 + I/E.
+  // SCAC는 거의 4자 고정이라 정규식도 4자 고정해야 한다.
+  // 욕심부려 {2,5}로 두면 POBUKW85I → POBUK + W85 로 잘못 파싱됨.
+  const m = mr.match(/^(\d{2})([A-Z]{4})(.+?)([IE])$/);
   if (!m) return null;
   return { year: m[1], scac: m[2], voyage: m[3], dir: m[4] as "I" | "E", raw: mr };
 }
 
+// 추가: 표준 4자 SCAC 외에 자주 보이는 카리어 코드 매핑 (Glovis 등)
+const SCAC_TO_CARRIER_EXT: Record<string, string> = {
+  GLVS: "Glovis (현대글로비스)",
+  SMLM: "SM Line",
+  GMSK: "GMSK",
+};
+
 export function carrierFromScac(scac?: string | null): string | null {
   if (!scac) return null;
-  // 정확 일치 우선
-  if (SCAC_TO_CARRIER[scac]) return SCAC_TO_CARRIER[scac];
-  // 길이 4로 자른 prefix 시도 (긴 변형 코드 대응)
-  if (scac.length > 4) {
-    const p4 = scac.slice(0, 4);
-    if (SCAC_TO_CARRIER[p4]) return SCAC_TO_CARRIER[p4];
-  }
-  return null;
+  return SCAC_TO_CARRIER[scac] ?? SCAC_TO_CARRIER_EXT[scac] ?? null;
 }
 
 // 선명에서 선사 추정 (tradlinx 쪽엔 SCAC가 없으므로 이름으로 역추적).
