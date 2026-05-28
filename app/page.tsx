@@ -493,9 +493,9 @@ export default function Page() {
                   <th>선박명 / 호출부호</th>
                   <th>항차</th>
                   <th>신고구분</th>
-                  <th>(PORT-MIS) 입항</th>
+                  <th>(PORT-MIS) 입항 일시</th>
                   <th>(PORT-MIS) 출항예정</th>
-                  <th>(PORT-MIS) 출항</th>
+                  <th>(PORT-MIS) 실제출항</th>
                   <th>계선장소</th>
                   {terminalData && (
                     <>
