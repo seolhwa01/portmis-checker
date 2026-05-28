@@ -97,29 +97,45 @@ export default function LookupPage() {
     setDetailLoading(true);
     try {
       const port = portCodeFor(it.terminalLabel);
-      const qs = new URLSearchParams({
-        prtAgCd: port.code,
-        sde: todayOffset(-14),
-        ede: todayOffset(7),
-        deGb: "I",
-        numOfRows: "100",
-      });
-      const res = await fetch(`/api/info5?${qs.toString()}`);
-      const json: Info5Response & { error?: string } = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-
       const targetNorm = normalizeVesselName(it.vsslNm);
       const targetTokens = tokenizeVesselName(it.vsslNm);
-      const matched = (json.items ?? []).filter((x) => {
+      const matches = (x: DepartureItem) => {
         const xNorm = normalizeVesselName(x.vsslNm);
         if (xNorm && targetNorm && xNorm === targetNorm) return true;
         if (targetNorm.length >= 4 && xNorm && (xNorm.includes(targetNorm) || targetNorm.includes(xNorm))) return true;
         const xTokens = tokenizeVesselName(x.vsslNm);
-        if (targetTokens.length && targetTokens.some((t) => xTokens.includes(t))) return true;
-        return false;
-      });
+        return targetTokens.length > 0 && targetTokens.some((t) => xTokens.includes(t));
+      };
 
-      setDetail({ port: port.code, portName: port.name, items: matched, totalCount: json.totalCount });
+      // Port-MIS는 페이지당 50건 한도. 최대 8페이지(400건)까지 병렬 조회해
+      // 해당 선박 매칭을 찾는다.
+      const sde = todayOffset(-14);
+      const ede = todayOffset(7);
+      const PAGES = 8;
+      const fetchPage = async (p: number) => {
+        const qs = new URLSearchParams({
+          prtAgCd: port.code,
+          sde,
+          ede,
+          deGb: "I",
+          numOfRows: "50",
+          pageNo: String(p),
+        });
+        const res = await fetch(`/api/info5?${qs.toString()}`);
+        const json: Info5Response & { error?: string } = await res.json();
+        if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+        return json;
+      };
+      const first = await fetchPage(1);
+      const rest = await Promise.all(
+        Array.from({ length: Math.min(PAGES - 1, Math.ceil(first.totalCount / 50) - 1) }, (_, i) =>
+          fetchPage(i + 2),
+        ),
+      );
+      const allItems = [first, ...rest].flatMap((r) => r.items ?? []);
+      const matched = allItems.filter(matches);
+
+      setDetail({ port: port.code, portName: port.name, items: matched, totalCount: first.totalCount });
     } catch (e: any) {
       setDetailErr(e?.message ?? String(e));
     } finally {
